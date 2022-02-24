@@ -4,6 +4,8 @@ apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
 apply plugin: "androidx.navigation.safeargs.kotlin"
 apply plugin: 'dagger.hilt.android.plugin'
+apply plugin: 'jacoco'
+
 
 android {
     compileSdkVersion 29
@@ -15,6 +17,7 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
+        buildConfigField("String","API_KEY",API_KEY)
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -113,5 +116,41 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
     androidTestImplementation "org.mockito:mockito-core:2.21.0"
+    androidTestImplementation "com.google.dagger:hilt-android-testing:2.28-alpha"
+    kaptAndroidTest "com.google.dagger:hilt-android-compiler:2.28-alpha"
 
+}
+
+jacoco {
+    toolVersion = "0.8.7"
+    reportsDir = file("${buildDir}/reports")
+}
+
+task coverageReport(type: JacocoReport, dependsOn: 'testDebugUnitTest') {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports"
+
+    def coverageSourceDirs = ['src/main/java']
+
+    classDirectories.from = fileTree(
+            dir: "${buildDir}/intermediates/javac/debug/classes",
+            excludes: ['**/R.class',
+                       '**/R$*.class',
+                       '**/BuildConfig.*',
+                       '**/Manifest*.*',
+                       'com/android/**/*.class']
+    )
+
+    sourceDirectories.from = files(coverageSourceDirs)
+    executionData.from = files("${buildDir}/jacoco/testDebugUnitTest.exec")
+
+    def javaTree = fileTree(dir: "$project.buildDir/intermediates/javac/debug/classes", excludes: ['**/R.class','**/R$*.class','**/BuildConfig.*','**/Manifest*.*','com/android/**/*.class'])
+//kotlin compiled classes
+    def kotlinTree = fileTree(dir: "$project.buildDir/tmp/kotlin-classes/debug", excludes: ['**/R.class','**/R$*.class','**/BuildConfig.*','**/Manifest*.*','com/android/**/*.class'])
+//...etc...
+    classDirectories.from = files([javaTree, kotlinTree])
+
+    reports {
+        html.enabled = true
+    }
 }
